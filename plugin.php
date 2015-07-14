@@ -265,7 +265,7 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 
 	$field_type = bp_get_the_profile_field_type();
 
-	if ( $dataset ) {
+	if ( !empty( $dataset ) ) {
 
 		global $bp;
 		$user_id = $bp->displayed_user->id;
@@ -274,13 +274,19 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 		if ($k == 0) {
 			
 			$dataset = get_post_meta($dataset, 'xp_dataset', true );
+
+
+
+			$field_value = xprofile_get_field_data( $id, $user_id );
+			d($field_value);
+			
 			foreach ($dataset as $data ) {
 
 				$function_name = 'xp_dataset_' . $field_type . '_option_html';
 				$args = array( 'object' => $object,  'value' => $data['value'], 'text' => $data['text'], 'field_id' => $id, 'option_id' => $object->id );
 				$options .= call_user_func( $function_name, $args);
-			}
 
+			}
 			
 		}
 
@@ -358,6 +364,61 @@ function xp_dataset_radio_option_html( $args ) {
 
 	return $option;
 }
+
+
+add_filter('bp_xprofile_set_field_data_pre_validate', 'xp_dataset_test_2', 10, 3);
+
+function xp_dataset_test_2( $value, $field, $field_type_obj ) {
+
+	global $xp_dataset_field;
+
+	$xp_dataset_field = $field;
+
+	
+
+	return $value;
+}
+
+function xp_dataset_test( $validated, $values, $this ) {
+
+	global $xp_dataset_field;
+
+	$field_id = $xp_dataset_field->id;
+
+	$xp_dataset = get_xp_dataset( $field_id );
+
+	
+
+	if ( $xp_dataset ) {
+		
+		$dataset = get_post_meta( $xp_dataset, 'xp_dataset', true);
+		$valid_values = array();
+
+		foreach ( $dataset as $data ) {
+
+			$valid_values[] = $data['value']; 
+		}
+
+		foreach ( $values as $value ) {
+
+			if ( in_array( $value, $valid_values ) ) {
+
+				$validated = true;
+			
+			} else {
+
+				$validated = false;
+				return $validated;
+			} 
+		}
+
+	}
+
+	return $validated;
+
+}
+
+add_filter( 'bp_xprofile_field_type_is_valid', 'xp_dataset_test', 10, 3);
 
 add_action ('plugins_loaded', 'xp_dataset_add_datasets_on_load');
 
