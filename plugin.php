@@ -54,6 +54,7 @@ function xp_dataset_data_callback_func() {
 
 	wp_nonce_field( 'xp_dataset_metabox', 'xp_dataset_nonce' );
 	$meta_box = '<div id = "xp_dataset_wrapper">';
+
 	$xp_dataset = get_post_meta( get_the_ID(), 'xp_dataset', true);
 
 	if ($xp_dataset) {
@@ -203,16 +204,14 @@ function xp_dataset_build_dataset_dropdown() {
 
 		}
 
-	} else {
-	
 	}
 	/* Restore original Post Data */
-	wp_reset_postdata();
+
+	$xp_dataset_query->reset_postdata();
 
 	return $xp_dataset_dropdown;
 
 }
-
 
 add_action( 'xprofile_field_after_save', 'xp_dataset_save_field');
 
@@ -263,6 +262,8 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 	$dataset = get_xp_dataset( $id );
 	$options = '';
 
+
+
 	$field_type = bp_get_the_profile_field_type();
 
 	if ( !empty( $dataset ) ) {
@@ -271,19 +272,17 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 		$user_id = $bp->displayed_user->id;
 		$user_value = xprofile_get_field_data( $id, $user_id );
 
+
 		if ($k == 0) {
 			
 			$dataset = get_post_meta($dataset, 'xp_dataset', true );
 
 
-
-			$field_value = xprofile_get_field_data( $id, $user_id );
-			d($field_value);
 			
 			foreach ($dataset as $data ) {
 
 				$function_name = 'xp_dataset_' . $field_type . '_option_html';
-				$args = array( 'object' => $object,  'value' => $data['value'], 'text' => $data['text'], 'field_id' => $id, 'option_id' => $object->id );
+				$args = array( 'object' => $object,  'value' => $data['value'], 'text' => $data['text'], 'field_id' => $id, 'option_id' => $object->id, 'user_values' => $user_value );
 				$options .= call_user_func( $function_name, $args);
 
 			}
@@ -306,7 +305,7 @@ function xp_dataset_install() {
 	return $wpdb->query( $sql );
 }
 
-register_activation_hook(__FILE__, 'xp_dataset_install');
+register_activation_hook( __FILE__, 'xp_dataset_install' );
 
 /* Functions */
 
@@ -338,21 +337,28 @@ function set_xp_dataset( $field_id, $dataset_id ) {
 
 function xp_dataset_checkbox_option_html( $args ) {
 
-	$option = '<label><input type="checkbox" name = "field_"' . $args['object']->parent_id . '" value="'. $args['value'] .'">' . $args['text'] . '</label>';
+	$checked = in_array( $args['value'], $args['user_values'] ) ? 'checked' : '';
+	
+	$option = '<label><input type="checkbox" name = "field_' . $args['object']->parent_id . '[]" value="'. $args['value'] .'" ' . $checked . '>' . $args['text'] . '</label>';
 
 	return $option;
 }
 
 function xp_dataset_selectbox_option_html( $args ) {
 
-	$option = '<option value="' . $args['value'] . '">'. $args['text'] .'</option>';
+	$selected = $args['value'] == $args['user_values'] ? 'selected' : '';
+	
+	$option = '<option value="' . $args['value'] . '" ' . $selected . '>'. $args['text'] .'</option>';
 
 	return $option;
 }
 
 function xp_dataset_multiselectbox_option_html( $args ) {
 
-	$option = '<option value="' . $args['value'] . '">'. $args['text'] .'</option>';
+	$selected = in_array( $args['value'], $args['user_values'] ) ? 'selected' : '';
+
+
+	$option = '<option value="' . $args['value'] . '" ' . $selected .  '>'. $args['text'] .'</option>';
 
 	return $option;
 
@@ -366,9 +372,9 @@ function xp_dataset_radio_option_html( $args ) {
 }
 
 
-add_filter('bp_xprofile_set_field_data_pre_validate', 'xp_dataset_test_2', 10, 3);
+add_filter('bp_xprofile_set_field_data_pre_validate', 'xp_dataset_create_global_field', 10, 3);
 
-function xp_dataset_test_2( $value, $field, $field_type_obj ) {
+function xp_dataset_create_global_field( $value, $field, $field_type_obj ) {
 
 	global $xp_dataset_field;
 
@@ -379,7 +385,7 @@ function xp_dataset_test_2( $value, $field, $field_type_obj ) {
 	return $value;
 }
 
-function xp_dataset_test( $validated, $values, $this ) {
+function xp_dataset_validate_options( $validated, $values, $this ) {
 
 	global $xp_dataset_field;
 
@@ -387,21 +393,34 @@ function xp_dataset_test( $validated, $values, $this ) {
 
 	$xp_dataset = get_xp_dataset( $field_id );
 
-	
-
 	if ( $xp_dataset ) {
 		
 		$dataset = get_post_meta( $xp_dataset, 'xp_dataset', true);
 		$valid_values = array();
-
+		
 		foreach ( $dataset as $data ) {
 
 			$valid_values[] = $data['value']; 
 		}
 
-		foreach ( $values as $value ) {
+		if ( is_array( $values) ) {
 
-			if ( in_array( $value, $valid_values ) ) {
+			foreach ( $values as $value ) {
+
+				if ( in_array( $value, $valid_values ) ) {
+
+					$validated = true;
+				
+				} else {
+
+					$validated = false;
+					return $validated;
+				} 
+			}
+		
+		} else {
+
+			if ( in_array( $values, $valid_values ) ) {
 
 				$validated = true;
 			
@@ -418,7 +437,7 @@ function xp_dataset_test( $validated, $values, $this ) {
 
 }
 
-add_filter( 'bp_xprofile_field_type_is_valid', 'xp_dataset_test', 10, 3);
+add_filter( 'bp_xprofile_field_type_is_valid', 'xp_dataset_validate_options', 10, 3);
 
 add_action ('plugins_loaded', 'xp_dataset_add_datasets_on_load');
 
@@ -691,11 +710,14 @@ function xp_dataset_add_datasets_on_load() {
 
 	$us_states = get_page_by_title( 'US States With Abbreviation', 'OBJECT', 'xp_dataset_dataset');
 
+	
 	if (! $us_states ) {
 
 		$args = array('post_title' => 'US States With Abbreviation', 'post_type' => 'xp_dataset_dataset', 'post_status' => 'publish');
 
 		$post_id = wp_insert_post( $args );
+
+
 
 		$us_states = array(
 

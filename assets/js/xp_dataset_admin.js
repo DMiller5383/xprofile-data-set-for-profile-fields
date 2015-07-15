@@ -57,7 +57,7 @@ jQuery(document).ready(function(){
 
 				for (var key in xp_datasets['xp_dataset_dropdown']) {
 
-						jQuery( '#xp-dataset-select_' + field_type ).append('<option value=' + key +' ' + ( xp_datasets.dataset ? "selected" : "" ) + '>' + xp_datasets['xp_dataset_dropdown'][key] + '</option>');
+						jQuery( '#xp-dataset-select_' + field_type ).append('<option value=' + key +' ' + ( key == xp_datasets.dataset ? "selected" : "" ) + '>' + xp_datasets['xp_dataset_dropdown'][key] + '</option>');
 
 				}
 			
