@@ -76,7 +76,7 @@ function xp_dataset_add_meta_box() {
 /**
 *
 * Responsible for rendering all input fields within the xp_dataset metabox.
-*
+* 
 **/
 
 function xp_dataset_data_callback_func() {
@@ -112,6 +112,7 @@ function xp_dataset_data_callback_func() {
 * @param string $value Optional		Value field of current item in dataset post meta being iterated through.
 * @param string $text  Optional 	Text field of current item in dataset post meta being iterated through.
 *
+* @return $metabox string 	HTML outputs for inputs in meta box.
 **/
 
 function xp_dataset_admin_values_html( $value = '', $text = '' ) {
@@ -132,10 +133,6 @@ function xp_dataset_admin_values_html( $value = '', $text = '' ) {
 			<a href = "#" id = "xp_dataset_remove_item-0" class="xp_dataset_remove_item">Remove Item</a>
 		</div>
 
-		
-			
-		
-
 
 		<?php
 
@@ -151,6 +148,8 @@ function xp_dataset_admin_values_html( $value = '', $text = '' ) {
  * When the xp_dataset is saved, saves our custom data.
  *
  * @param int $post_id The ID of the post being saved.
+ *
+ * @return $datasets_meta bool OR int returns the meta value if new post.  Return true if meta successfully updated.
  */
 function xp_dataset_save_meta_box_data( $post_id ) {
 
@@ -205,7 +204,9 @@ function xp_dataset_save_meta_box_data( $post_id ) {
 	} 
 
 
-	update_post_meta( $post_id, 'xp_dataset', $xp_datasets );
+	$datasets_meta = update_post_meta( $post_id, 'xp_dataset', $xp_datasets );
+
+	return $datasets_meta;
 
 }
 add_action( 'save_post', 'xp_dataset_save_meta_box_data' );
@@ -215,6 +216,7 @@ add_action( 'save_post', 'xp_dataset_save_meta_box_data' );
 * Build array of xp_datasets to be localized.
 * Array is structured to contain the dataset id as the item key and dataset title as the item value.
 * 
+* @return array $xp_dataset_dropdown List of datasets ( dataset_id => dataset_title)
 **/
 
 function xp_dataset_build_dataset_dropdown() {
@@ -303,7 +305,17 @@ add_filter( 'bp_get_the_profile_field_options_select' ,'xp_dataset_render_datase
 
 /**
 *
-* 
+* Renders options from dataset if profile field is using a dataset.
+*
+* Calls function to render option html based on name of the field - ie. xp_dataset_checkbox_option_html
+*
+* @param string $value HTML tag for option being rendered.
+* @param object $object Current option being rendered for.
+* @param int $id Id of field object.
+* @param string $selected Current selected value.
+* @param int $k current Index of the foreach loop.
+*
+* @return string $value option value or list of options (if dataset) to be rendered.
 *
 **/
 
@@ -311,8 +323,6 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 
 	$dataset = get_xp_dataset( $id );
 	$options = '';
-
-
 
 	$field_type = bp_get_the_profile_field_type();
 
@@ -322,29 +332,37 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 		$user_id = $bp->displayed_user->id;
 		$user_value = xprofile_get_field_data( $id, $user_id );
 
-
 		if ($k == 0) {
 			
 			$dataset = get_post_meta($dataset, 'xp_dataset', true );
 
-
-			
 			foreach ($dataset as $data ) {
 
 				$function_name = 'xp_dataset_' . $field_type . '_option_html';
 				$args = array( 'object' => $object,  'value' => $data['value'], 'text' => $data['text'], 'field_id' => $id, 'option_id' => $object->id, 'user_values' => $user_value );
-				$options .= call_user_func( $function_name, $args);
+				$value .= call_user_func( $function_name, $args);
 
 			}
 			
 		}
 
-		return $options;
+		return $value;
 	}
 
 	return $value;
 
 }
+
+/**
+*
+* Creates xp_dataset column in bp_xprofile_fields table (if it does not already exist) when plugin activates.
+*
+* @global object $wpdb WordPress database object.
+* @global object $bp BuddyPress object.
+*
+* @return bool $wpdb->query( $sql ) Return true if query is successful.
+*
+**/
 
 function xp_dataset_install() {
 
@@ -357,7 +375,22 @@ function xp_dataset_install() {
 
 register_activation_hook( __FILE__, 'xp_dataset_install' );
 
-/* Functions */
+
+
+//helper functions
+
+/**
+*
+* Retrieves a dataset based on field id.
+* 
+* @param int $field_id Id of field to retrieve dataset from.
+*
+* @global object $wpdb WordPress database object.
+* @global object $bp BuddyPress object.
+*
+* @return $xp_dataset int Id of xp_dataset post type.
+*
+**/
 
 function get_xp_dataset( $field_id ) {
 
@@ -373,6 +406,20 @@ function get_xp_dataset( $field_id ) {
 
 }
 
+/**
+*
+* Sets the value of xp_dataset for a given field.
+* 
+* @param int $field_id Id of field set dataset.
+* @param int $dataset_id Id of dataset to use for fields dataset.
+*
+* @global object $wpdb WordPress database object.
+* @global object $bp BuddyPress object.
+*
+* @return bool $result 1 if successful and 0 if query failed.
+*
+**/
+
 function set_xp_dataset( $field_id, $dataset_id ) {
 
 	global $wpdb, $bp;
@@ -385,6 +432,16 @@ function set_xp_dataset( $field_id, $dataset_id ) {
 
 }
 
+/**
+*
+* Renders the HTML for a checkbox option.
+*
+* @param array $args Arguments passed in from xp_render_dataset_options function necessary for HTML rendering.
+*
+* @return string $option HTML to render for checkbox option.
+*
+**/
+
 function xp_dataset_checkbox_option_html( $args ) {
 
 	$checked = in_array( $args['value'], $args['user_values'] ) ? 'checked' : '';
@@ -394,6 +451,16 @@ function xp_dataset_checkbox_option_html( $args ) {
 	return $option;
 }
 
+/**
+*
+* Renders the HTML for a selectbox option.
+*
+* @param array $args Arguments passed in from xp_render_dataset_options function necessary for HTML rendering.
+*
+* @return string $option HTML to render for selectbox option.
+*
+**/
+
 function xp_dataset_selectbox_option_html( $args ) {
 
 	$selected = $args['value'] == $args['user_values'] ? 'selected' : '';
@@ -402,6 +469,16 @@ function xp_dataset_selectbox_option_html( $args ) {
 
 	return $option;
 }
+
+/**
+*
+* Renders the HTML for a multiselect box option.
+*
+* @param array $args Arguments passed in from xp_render_dataset_options function necessary for HTML rendering.
+*
+* @return string $option HTML to render for multiselect box option.
+*
+**/
 
 function xp_dataset_multiselectbox_option_html( $args ) {
 
@@ -414,6 +491,16 @@ function xp_dataset_multiselectbox_option_html( $args ) {
 
 }
 
+/**
+*
+* Renders the HTML for a radio button option.
+*
+* @param array $args Arguments passed in from xp_render_dataset_options function necessary for HTML rendering.
+*
+* @return string $option HTML to render for radio button option.
+*
+**/
+
 function xp_dataset_radio_option_html( $args ) {
 
 	$option = '<label><input type="radio" name="field_'. $args['field_id'] . '" id="option_' . $args['option_id'] . ' value="' . $args['value'] . '>' . $args['text'] .'</label>';
@@ -423,6 +510,17 @@ function xp_dataset_radio_option_html( $args ) {
 
 
 add_filter('bp_xprofile_set_field_data_pre_validate', 'xp_dataset_create_global_field', 10, 3);
+
+/**
+*
+* Creates global field for use in xp_dataset_validate options
+*
+* @global $xp_dataset_field object 
+*
+* @return string $value value option value submitted if multi option is available for this field.
+*
+**/
+
 
 function xp_dataset_create_global_field( $value, $field, $field_type_obj ) {
 
@@ -434,6 +532,24 @@ function xp_dataset_create_global_field( $value, $field, $field_type_obj ) {
 
 	return $value;
 }
+
+/**
+*
+* Validates dataset option
+* 
+* If field is using a dataset to generate options, vaidation will fail because option must be
+* whitelisted by BuddyPress.  Therefore we must just make sure that the value passed in is 
+* valid within our dataset.
+*
+* @param bool $validated True if option is valid
+* @param array OR string $values Option(s) submitted by field.  If multiple values( ie. checkboxes) variable is array.
+* @param object $this BP_Xprofile_Field_Type.
+*
+* @global $xp_dataset_field object bp_xprofile_field being validated.
+*
+* @return bool $validated true if object is valid.
+*
+**/
 
 function xp_dataset_validate_options( $validated, $values, $this ) {
 
@@ -490,6 +606,14 @@ function xp_dataset_validate_options( $validated, $values, $this ) {
 add_filter( 'bp_xprofile_field_type_is_valid', 'xp_dataset_validate_options', 10, 3);
 
 add_action ('plugins_loaded', 'xp_dataset_add_datasets_on_load');
+
+/**
+* 
+* Loads pre-made datasets after plugin is loaded.  
+*
+* Comes with Countries and US States.  Also contains action hook to add custom datasets on load.
+*
+**/
 
 function xp_dataset_add_datasets_on_load() {
 
@@ -827,6 +951,11 @@ function xp_dataset_add_datasets_on_load() {
 		update_post_meta( $post_id, 'xp_dataset', $us_states );
 
 }
+
+	/**
+	 * Fires after checking if Countries and States datasets have been loaded.
+	 *
+	 */
 
 	do_action('xp_dataset_add_datasets_on_load');
 
