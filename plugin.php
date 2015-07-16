@@ -10,6 +10,16 @@ Author: Daniel Miller
 */
 
 
+/**
+*
+* Enqueues necessary script file for plugin and localizes various variables.
+* 
+* Enqueue xp_dataset admin script.  This script will also localize variables for use in javascript file.  
+* Creates an array called xp_datasets which has three parameters:
+*   xp_dataset_dropdown: contains an array of all xp_dataset post type with the id and title.
+*   dataset: The xp_dataset that the active field is using.
+*   field_type: The type of the field being edited. 
+**/
 
 function xp_dataset_enqueue_scripts() {
 
@@ -28,6 +38,13 @@ add_action( 'admin_enqueue_scripts', 'xp_dataset_enqueue_scripts' );
 
 add_action( 'init', 'xp_dataset_create_dataset_post_type' );
 
+/**
+*
+* Creates xp_dataset post type.
+*
+**/
+
+
 function xp_dataset_create_dataset_post_type() {
   register_post_type( 'xp_dataset_dataset',
     array(
@@ -44,11 +61,23 @@ function xp_dataset_create_dataset_post_type() {
 
 add_action( 'add_meta_boxes', 'xp_dataset_add_meta_box' );
 
+/**
+*
+* Adds meta-box to for dataset post type.
+*
+**/
+
 function xp_dataset_add_meta_box() {
 
 	add_meta_box('dataid', 'Data', 'xp_dataset_data_callback_func', 'xp_dataset_dataset', 'normal');
 
 }
+
+/**
+*
+* Responsible for rendering all input fields within the xp_dataset metabox.
+*
+**/
 
 function xp_dataset_data_callback_func() {
 
@@ -76,6 +105,14 @@ function xp_dataset_data_callback_func() {
 
 }
 
+/**
+*
+* Render html required to create the xp_data inputs for the xp_dataset metabox.
+*
+* @param string $value Optional		Value field of current item in dataset post meta being iterated through.
+* @param string $text  Optional 	Text field of current item in dataset post meta being iterated through.
+*
+**/
 
 function xp_dataset_admin_values_html( $value = '', $text = '' ) {
 	
@@ -111,18 +148,11 @@ function xp_dataset_admin_values_html( $value = '', $text = '' ) {
 
 
 /**
- * When the post is saved, saves our custom data.
+ * When the xp_dataset is saved, saves our custom data.
  *
  * @param int $post_id The ID of the post being saved.
  */
 function xp_dataset_save_meta_box_data( $post_id ) {
-
-	/*
-	 * We need to verify this came from our screen and with proper authorization,
-	 * because the save_post action can be triggered at other times.
-	 */
-
-	// Check if our nonce is set.
 
 
 	if ( ! isset( $_POST['xp_dataset_nonce'] ) ) {
@@ -130,19 +160,16 @@ function xp_dataset_save_meta_box_data( $post_id ) {
 		return;
 	}
 
-	// Verify that the nonce is valid.
 	if ( ! wp_verify_nonce( $_POST['xp_dataset_nonce'], 'xp_dataset_metabox' ) ) {
 		
 		
 		return;
 	}
 
-	// If this is an autosave, our form has not been submitted, so we don't want to do anything.
 	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 		return;
 	}
 
-	// Check the user's permissions.
 	if ( isset( $_POST['post_type'] ) && 'xp_dataset_dataset' == $_POST['post_type'] ) {
 
 		if ( ! current_user_can( 'edit_page', $post_id ) ) {
@@ -157,8 +184,6 @@ function xp_dataset_save_meta_box_data( $post_id ) {
 	}
 
 
-
-	
 	$xp_dataset_values = $_POST['xp_dataset_value'];
 	$xp_dataset_texts = $_POST['xp_dataset_text'];
 
@@ -184,6 +209,13 @@ function xp_dataset_save_meta_box_data( $post_id ) {
 
 }
 add_action( 'save_post', 'xp_dataset_save_meta_box_data' );
+
+/**
+*
+* Build array of xp_datasets to be localized.
+* Array is structured to contain the dataset id as the item key and dataset title as the item value.
+* 
+**/
 
 function xp_dataset_build_dataset_dropdown() {
 
@@ -214,6 +246,18 @@ function xp_dataset_build_dataset_dropdown() {
 }
 
 add_action( 'xprofile_field_after_save', 'xp_dataset_save_field');
+
+/**
+*
+* Saves the dataset id into the database for the specified field.
+* 
+* Saves the id of the xp_dataset post type being used by profile in xp_dataset field in xprofile_data table (if applicable).
+*
+* @param object $field 		xprofile field that is being saved.
+* @global object $wpdb		WordPress database object.
+* @global object $bp 		BuddyPress object
+*
+**/
 
 function xp_dataset_save_field( $field ) {
 
@@ -256,6 +300,12 @@ add_filter( 'bp_get_the_profile_field_options_multiselect' ,'xp_dataset_render_d
 add_filter( 'bp_get_the_profile_field_options_checkbox' ,'xp_dataset_render_dataset_options', 10 , 5 );
 add_filter( 'bp_get_the_profile_field_options_radio' ,'xp_dataset_render_dataset_options', 10 , 5 );
 add_filter( 'bp_get_the_profile_field_options_select' ,'xp_dataset_render_dataset_options', 10 , 5 );
+
+/**
+*
+* 
+*
+**/
 
 function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k ) {
 
