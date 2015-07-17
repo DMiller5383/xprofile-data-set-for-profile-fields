@@ -32,12 +32,14 @@ jQuery(document).ready(function(){
 
 	});
 
-	jQuery(".postbox.bp-options-box.ui-sortable .inside").append('<div class="xp-dataset-options"></div>')
+	
+	jQuery(".postbox.bp-options-box.ui-sortable .inside").append('<div class="xp-dataset-options"></div>');
 	
 	jQuery(".xp-dataset-options").append( '<input type="checkbox" name="xp-dataset-enable" id="xp-dataset-enable" class="xp-dataset-enable" value="enabled" '+ ( xp_datasets.dataset ? 'checked' : '' ) +'/>Use Dataset' );
 	
 	jQuery(".xp-dataset-options").append(' <select class="xp-dataset-select" id="xp-dataset-select"><option value="">Select</option>');
 
+	
 	
 
 
@@ -65,12 +67,24 @@ jQuery(document).ready(function(){
 
 				jQuery(child).attr( 'id', 'xp-dataset-enable_' + field_type );  
 				jQuery(child).attr( 'name', 'xp-dataset-enable_' + field_type );
+
+				if ( jQuery('#xp-dataset-enable_' + field_type ).is( ':checked' ) ) {
+
+					jQuery('#' + field_type + ' a').bind( 'click', function () {
+
+						return false;
+					
+					});
+
+				}
+
 			}
 
 		});
 
 	});
 
+	
 	jQuery('.xp-dataset-enable').click( function() {
 
 
@@ -99,7 +113,9 @@ jQuery(document).ready(function(){
 
 			if ( !xp_dataset_xprofile_option_values_populated( id ) ) {
 
+				console.log( id );
 				jQuery('#' + id + '_option1').val('Using Dataset');
+
 			}
 
 
@@ -108,13 +124,10 @@ jQuery(document).ready(function(){
 			jQuery('#' + id + ' a').unbind( 'click' );
 			jQuery('#xp-dataset-select_' + id).prop('readonly', true);
 
-
 			options.each( function( index, option ) {
 
 				jQuery(option).prop( 'readonly', false );
 				jQuery('[name^=isDefault_' + id + '_option]').prop('readonly', false);
-
-				
 
 			});
 
@@ -137,12 +150,10 @@ jQuery(document).ready(function(){
 
 		options.each( function( index, option ) {
 
-				jQuery(option).prop( 'readonly', true );
-				jQuery('[name^=isDefault_' + id + '_option]').prop('readonly', true);
+			jQuery(option).prop( 'readonly', true );
+			jQuery('[name^=isDefault_' + id + '_option]').prop('readonly', true);
 
-				
-			
-			});
+		});
 	}
 	
 
@@ -182,7 +193,7 @@ function xp_dataset_get_html_id_num_from_id( id ) {
 function xp_dataset_xprofile_option_values_populated( id ) {
 
 	options = jQuery('[id^="' + id + '_div"]');
-
+	populated = false;
 
 
 	options.each( function (key, value) {
@@ -190,10 +201,19 @@ function xp_dataset_xprofile_option_values_populated( id ) {
 		div_id = jQuery(value).attr('id');
 		text_box = jQuery("#" + div_id + ' input[type="text"]');
 		
+
 		if ( text_box.val().trim() != '') {
 
-			return true;
+			populated = true;
+			return false;
+
 		}
 
+		
+
 	}); 
+
+
+
+	return populated;
 }

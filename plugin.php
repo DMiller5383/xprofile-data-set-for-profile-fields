@@ -30,7 +30,7 @@ function xp_dataset_enqueue_scripts() {
 	$datasets_dropdown = xp_dataset_build_dataset_dropdown();
 
 	//reset global post variable to was it was before running query in xp_dataset_build_dataset_dropdown.
-	$post = $current_post;
+	
 	$field_id = $_GET['field_id'];
 	$dataset = get_xp_dataset( $field_id );
 
@@ -42,7 +42,7 @@ function xp_dataset_enqueue_scripts() {
 
 }
 
-add_action( 'admin_enqueue_scripts', 'xp_dataset_enqueue_scripts' );
+add_action( 'admin_enqueue_scripts', 'xp_dataset_enqueue_scripts', 20 );
 
 add_action( 'init', 'xp_dataset_create_dataset_post_type' );
 
