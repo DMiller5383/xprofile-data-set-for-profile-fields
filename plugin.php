@@ -22,16 +22,24 @@ Author: Daniel Miller
 **/
 
 function xp_dataset_enqueue_scripts() {
+	global $post;
 
+	//Get the post.  After running xp_dataset_build dataset dropdown, global variable $post will incorrect.
+	$current_post = $post;
 	wp_register_script( 'xp_dataset_admin', plugin_dir_url( __FILE__ ) . '/assets/js/xp_dataset_admin.js' );
 	$datasets_dropdown = xp_dataset_build_dataset_dropdown();
+
+	//reset global post variable to was it was before running query in xp_dataset_build_dataset_dropdown.
+	$post = $current_post;
 	$field_id = $_GET['field_id'];
 	$dataset = get_xp_dataset( $field_id );
+
 	$field = xprofile_get_field( $field_id );
 
 	$field_type = $field->type;
 	wp_localize_script('xp_dataset_admin', 'xp_datasets', array( 'xp_dataset_dropdown' => $datasets_dropdown, 'dataset' => $dataset, 'field_type' => $field_type )); 
     wp_enqueue_script( 'xp_dataset_admin' );
+
 }
 
 add_action( 'admin_enqueue_scripts', 'xp_dataset_enqueue_scripts' );
@@ -241,8 +249,7 @@ function xp_dataset_build_dataset_dropdown() {
 	}
 	/* Restore original Post Data */
 
-	$xp_dataset_query->reset_postdata();
-
+	wp_reset_query();
 	return $xp_dataset_dropdown;
 
 }
@@ -315,6 +322,8 @@ add_filter( 'bp_get_the_profile_field_options_select' ,'xp_dataset_render_datase
 * @param string $selected Current selected value.
 * @param int $k current Index of the foreach loop.
 *
+* @global object $bp BuddyPress object.
+*
 * @return string $value option value or list of options (if dataset) to be rendered.
 *
 **/
@@ -331,6 +340,7 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 		global $bp;
 		$user_id = $bp->displayed_user->id;
 		$user_value = xprofile_get_field_data( $id, $user_id );
+		$value = '';
 
 		if ($k == 0) {
 			
@@ -340,13 +350,15 @@ function xp_dataset_render_dataset_options( $value, $object, $id, $selected, $k 
 
 				$function_name = 'xp_dataset_' . $field_type . '_option_html';
 				$args = array( 'object' => $object,  'value' => $data['value'], 'text' => $data['text'], 'field_id' => $id, 'option_id' => $object->id, 'user_values' => $user_value );
+				
+			
 				$value .= call_user_func( $function_name, $args);
 
 			}
 			
 		}
 
-		return $value;
+		
 	}
 
 	return $value;
