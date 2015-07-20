@@ -195,13 +195,11 @@ function xp_dataset_xprofile_option_values_populated( id ) {
 	options = jQuery('[id^="' + id + '_div"]');
 	populated = false;
 
-
 	options.each( function (key, value) {
 
 		div_id = jQuery(value).attr('id');
 		text_box = jQuery("#" + div_id + ' input[type="text"]');
 		
-
 		if ( text_box.val().trim() != '') {
 
 			populated = true;
@@ -209,11 +207,7 @@ function xp_dataset_xprofile_option_values_populated( id ) {
 
 		}
 
-		
-
 	}); 
-
-
 
 	return populated;
 }
