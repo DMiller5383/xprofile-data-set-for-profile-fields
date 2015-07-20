@@ -457,8 +457,15 @@ function set_xp_dataset( $field_id, $dataset_id ) {
 
 function xp_dataset_checkbox_option_html( $args ) {
 
-	$checked = in_array( $args['value'], $args['user_values'] ) ? 'checked' : '';
+	if ( $args['user_values'] ) {
+		
+		$checked = in_array( $args['value'], $args['user_values'] ) ? 'checked' : '';
 	
+	} else {
+
+		$checked = '';
+	}
+ 	
 	$option = '<label><input type="checkbox" name = "field_' . $args['object']->parent_id . '[]" value="'. $args['value'] .'" ' . $checked . '>' . $args['text'] . '</label>';
 
 	return $option;
@@ -476,7 +483,15 @@ function xp_dataset_checkbox_option_html( $args ) {
 
 function xp_dataset_selectbox_option_html( $args ) {
 
-	$selected = $args['value'] == $args['user_values'] ? 'selected' : '';
+	if( $args['user_values'] ) {
+	
+		$selected = $args['value'] == $args['user_values'] ? 'selected' : '';
+
+	} else {
+
+		$selected = '';
+
+	}	
 	
 	$option = '<option value="' . $args['value'] . '" ' . $selected . '>'. $args['text'] .'</option>';
 
@@ -495,8 +510,19 @@ function xp_dataset_selectbox_option_html( $args ) {
 
 function xp_dataset_multiselectbox_option_html( $args ) {
 
-	$selected = in_array( $args['value'], $args['user_values'] ) ? 'selected' : '';
+	if( $args['user_values'] ) {
 
+		$selected = in_array( $args['value'], $args['user_values'] ) ? 'selected' : '';
+
+	} else {
+
+		$selected = '';
+
+	}
+
+	
+
+	
 
 	$option = '<option value="' . $args['value'] . '" ' . $selected .  '>'. $args['text'] .'</option>';
 
